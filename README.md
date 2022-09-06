@@ -1,2 +1,3 @@
 # deno-paystack
-A simple deno runtime wrapper support for paystack 
+
+A simple deno runtime wrapper support for paystack
