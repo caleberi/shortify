@@ -1,4 +1,4 @@
-import { config } from "https://deno.land/x/dotenv@v3.2.0/mod.ts";
+// import { config } from "https://deno.land/x/dotenv@v3.2.0/mod.ts";
 import { ConfigurationError } from './error.ts';
 import {
 	assign,
@@ -6,7 +6,7 @@ import {
 	toUpper,
 } from 'https://deno.land/x/lodash@4.17.15-es/lodash.js';
 
-config({ export: true });
+// config({ export: true });
 
 let configurationInstance: any = null;
 
