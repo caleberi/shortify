@@ -24,46 +24,46 @@ await logger._init_logger([
       level: "DEBUG",
     },
   },
-  {
-    name: "app-error",
-    opts: {
-      file: {
-        filename: "./error.txt",
-        level: "ERROR",
-        mode: "a",
-        formatter: (rec) =>
-          JSON.stringify(
-            `logger:${rec.loggerName}=> date:[${rec.datetime}] | level:[${
-              rec.level
-            }] | msg:[${rec.msg}] | meta: [${JSON.stringify(rec.args)}] `
-          ),
-      },
-      level: "ERROR",
-    },
-  },
-  {
-    name: "app-info",
-    opts: {
-      file: {
-        filename: "./info.txt",
-        level: "INFO",
-        mode: "a",
-        formatter: (rec) =>
-          JSON.stringify(
-            `logger:${rec.loggerName}=> date:[${rec.datetime}] | level:[${
-              rec.level
-            }] | msg:[${rec.msg}] | meta: [${JSON.stringify(rec.args)}] `
-          ),
-      },
-      level: "INFO",
-    },
-  },
+  // {
+  //   name: "app-error",
+  //   opts: {
+  //     file: {
+  //       filename: "./error.txt",
+  //       level: "ERROR",
+  //       mode: "a",
+  //       formatter: (rec) =>
+  //         JSON.stringify(
+  //           `logger:${rec.loggerName}=> date:[${rec.datetime}] | level:[${
+  //             rec.level
+  //           }] | msg:[${rec.msg}] | meta: [${JSON.stringify(rec.args)}] `
+  //         ),
+  //     },
+  //     level: "ERROR",
+  //   },
+  // },
+  // {
+  //   name: "app-info",
+  //   opts: {
+  //     file: {
+  //       filename: "./info.txt",
+  //       level: "INFO",
+  //       mode: "a",
+  //       formatter: (rec) =>
+  //         JSON.stringify(
+  //           `logger:${rec.loggerName}=> date:[${rec.datetime}] | level:[${
+  //             rec.level
+  //           }] | msg:[${rec.msg}] | meta: [${JSON.stringify(rec.args)}] `
+  //         ),
+  //     },
+  //     level: "INFO",
+  //   },
+  // },
 ]);
 
 
 export const applogger = log.getLogger("app-info");
-export const errorlogger = log.getLogger("app-error");
-export const requestLogger = log.getLogger("request");
+export const errorlogger = log.getLogger("app-info");
+export const requestLogger = log.getLogger("app-info");
 
 export const appconfig = configuration({
   port: parseInt(getEnvironmentVariable("PORT")),
