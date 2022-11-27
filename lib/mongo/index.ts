@@ -1,4 +1,2 @@
-import { UserRepository } from './repo/userRepository.ts';
-import { AccessRepository } from './repo/accessHistoryRepository.ts';
-import { VaultEntryRepository } from './repo/vaultEntryRepository.ts';
-import { VaultRepository } from './repo/vaultRepository.ts';
+import { UserRepository } from './repo/user.repository.ts';
+import { LinkRepository } from './repo/link.repository.ts';

@@ -1,20 +1,9 @@
 import { NextFunction, OpineRequest, OpineResponse } from '../../deps.ts';
-import { VaultEncryptionSupport } from '../mongo/models/vault.ts';
 import {
 	decode,
 	encode,
 } from 'https://deno.land/std@0.133.0/encoding/base64.ts';
-export const matchVaultEncryptionSupport = (input: string) => {
-	let m = input.toUpperCase();
-	switch (m) {
-		case 'SHA256':
-			return VaultEncryptionSupport.SHA256;
-		case 'SHA512':
-			return VaultEncryptionSupport.SHA512;
-	}
-	return null;
-};
-
+export const URL_CODE_LENGTH=8;
 export const catchAsync = (fn: Function) => {
 	return (req: OpineRequest, res: OpineResponse, next: NextFunction) =>
 		fn(req, res, next).catch((err: Error) => next(err));
@@ -43,3 +32,12 @@ export const decryptWithDecryptionInfo = (
 	let firstBrace = decryptedData.indexOf('[');
 	return decryptedData.slice(firstBrace, minusIdx - 1);
 };
+
+
+export function getId() {
+    var arr = new Uint8Array(URL_CODE_LENGTH/2)
+    crypto.getRandomValues(arr);
+    const toHex=(d:any)=>d.toString(16).padStart(2, "0");
+    return Array.from(arr, toHex).join('')
+  }
+

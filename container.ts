@@ -2,11 +2,6 @@ import configuration, { getEnvironmentVariable } from "./config.ts";
 import logger from "./logger.ts";
 import { connect } from "https://deno.land/x/redis@v0.25.4/mod.ts";
 import * as log from "https://deno.land/std@0.133.0/log/mod.ts";
-import {
-  readableStreamFromReader,
-  writableStreamFromWriter,
-} from "https://deno.land/std@0.133.0/streams/conversion.ts";
-import { mergeReadableStreams } from "https://deno.land/std@0.133.0/streams/merge.ts";
 
 async function runRedis() {
   setTimeout(async () => {
@@ -16,6 +11,8 @@ async function runRedis() {
     });
   }, 1000);
 }
+
+
 await logger._init_logger([
   {
     name: "request",
@@ -80,5 +77,4 @@ export const appconfig = configuration({
   environment: getEnvironmentVariable("APP_ENV"),
 });
 
-export const redis = appconfig.redisEnabled
-  ? await runRedis(): null;
+export const redis = appconfig.redisEnabled ? await runRedis() : null;

@@ -51,24 +51,14 @@ export class ExistingUserError extends Error {
 	}
 }
 
-export class NoExistingVaultError extends Error {
+export class NoExistingLinkError extends Error {
 	private static default_no_vault_exist_message =
-		'No Vault with this details exist before 🎯';
+		'No Link with this details exist before 🎯';
 	constructor(msg?: string, options?: ErrorOptions) {
 		super(
-			msg ? msg : NoExistingVaultError.default_no_vault_exist_message,
+			msg ? msg : NoExistingLinkError.default_no_vault_exist_message,
 			options,
 		);
 	}
 }
 
-export class UnAuthorizedVaultAccessError extends Error {
-	private static default_unauthorized_vault_exist_message =
-		'Access to this vault was denied 🎯';
-	constructor(msg?: string, options?: ErrorOptions) {
-		super(
-			msg ? msg : UnAuthorizedVaultAccessError.default_unauthorized_vault_exist_message,
-			options,
-		);
-	}
-}

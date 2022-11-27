@@ -2,6 +2,7 @@ import { ObjectId } from '../../../deps.ts';
 import {
 	IsEmail,
 	IsNotEmpty,
+	IsDate
 } from 'https://deno.land/x/deno_class_validator@v1.0.0/mod.ts';
 
 export enum Role {
@@ -9,24 +10,29 @@ export enum Role {
 	ADMIN = 'ADMIN',
 }
 export class User {
-	// @ts-ignore: Temporary workaround (see ticket #422)
-	public _id: ObjectId;
+	public _id: ObjectId|undefined;
 
 	@IsNotEmpty({ message: 'Username must be provided' })
-	// @ts-ignore: Temporary workaround (see ticket #422)
-	public username: string;
+	public username: string|undefined;
 
 	@IsNotEmpty({ message: 'Password must be provided' })
-	// @ts-ignore: Temporary workaround (see ticket #422)
-	public password: string;
+	public password: string|undefined;
 
-	// @ts-ignore: Temporary workaround (see ticket #422)
-	public profileImageUrl: string;
+	public profileImageUrl: string|undefined;
 
 	@IsEmail({}, { message: 'Missing or incorrect email address' })
-	// @ts-ignore: Temporary workaround (see ticket #422)
-	public email: string;
+	public email: string|undefined;
 
-	// @ts-ignore: Temporary workaround (see ticket #422)
 	public role: Role = Role.OWNER;
+
+	@IsDate()
+	public updatedAt: Date|undefined;
+
+	@IsDate()
+    public createdAt: Date|undefined;
+
+	constructor(){
+		this.createdAt = new Date();
+		this.updatedAt = new Date()
+	}
 }

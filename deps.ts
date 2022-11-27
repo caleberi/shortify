@@ -24,9 +24,7 @@ export type {
 } from 'https://deno.land/x/opine@2.1.5/mod.ts';
 
 export { User } from './lib/mongo/models/user.ts';
-export { Vault } from './lib/mongo/models/vault.ts';
-export { VaultEntry } from './lib/mongo/models/vault_entry.ts';
-export { AccessHistory } from './lib/mongo/models/access_history.ts';
+export { Link } from './lib/mongo/models/link.ts';
 export { validate } from 'https://deno.land/x/deno_class_validator@v1.0.0/mod.ts';
 export { bcryptCompare, bcryptEncrypt } from './lib/utils/bcrypt.ts';
 export {
@@ -56,3 +54,10 @@ export {
 	IsNumber,
 	Length,
 } from 'https://deno.land/x/deno_class_validator@v1.0.0/mod.ts';
+
+import {
+    decode as base64Decode,
+    encode as base64Encode,
+} from 'https://deno.land/std@0.82.0/encoding/base64.ts';
+ 
+export { base64Decode, base64Encode };

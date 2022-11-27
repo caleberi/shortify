@@ -11,7 +11,6 @@ import {
 	getNumericDate,
 	isEmpty,
 	isNull,
-	ObjectId,
 	User,
 	validate,
 	ValidationError,
@@ -23,11 +22,10 @@ import type {
 	OpineResponse,
 	Payload,
 } from '../../deps.ts';
-import { UserRepository } from '../mongo/repo/userRepository.ts';
+import { UserRepository } from '../mongo/repo/user.repository.ts';
 import { Role } from '../mongo/models/user.ts';
 import { requestLogger } from '../../container.ts';
-import { UnAuthorizedVaultAccessError } from "../../error.ts";
-import { VaultRepository } from "../mongo/repo/vaultRepository.ts";
+
 
 const key = await crypto.subtle.generateKey(
 	{ name: 'HMAC', hash: 'SHA-512' },
@@ -56,7 +54,7 @@ const CreateJwtToken = async (
 	}
 };
 
-const VerifyJwtToken = async (token: string): Promise<Payload> => {
+const verifyJwtToken = async (token: string): Promise<Payload> => {
 	try {
 		const payload = await verify(token, key);
 		return payload;
@@ -76,12 +74,12 @@ export const login = (db: UserRepository) =>
 
 		const user: User | undefined = await db.findOne({ email });
 
-		if (user != null && bcryptCompare(password, user.password)) {
+		if (user != null && await bcryptCompare(password,user.password as string)) {
 			requestLogger.debug(`Found User : ${JSON.stringify(user)}`);
 			const token = await CreateJwtToken({
-				id: user._id.toString(),
-				email: user.email,
-				username: user.username,
+				id: user._id?.toString() as string,
+				email: user.email as string,
+				username: user.username as string,
 				role: user.role,
 			}, 'HS512');
 			return res.setStatus(200).json({
@@ -108,6 +106,7 @@ export const signup = (db: UserRepository) =>
 	) => {
 		const { username, password, email } = req.body;
 		const newUser = new User();
+
 		newUser.email = email;
 		newUser.username = username;
 		newUser.password = password;
@@ -123,7 +122,7 @@ export const signup = (db: UserRepository) =>
 					error: extractValidationErrorMessage(errors),
 				});
 			}
-			newUser.password = await bcryptEncrypt(newUser.password, 10);
+			newUser.password = await bcryptEncrypt(newUser.password as string, 10);
 			const id = await db.create(newUser);
 			if (isNull(id)) {
 				return res.setStatus(401).json({
@@ -137,7 +136,6 @@ export const signup = (db: UserRepository) =>
 				message: `Created a user with id : [${id}] 🐙`,
 			});
 		} catch (err) {
-			console.log(err);
 			return res.setStatus(500).json({ status: 'FAILURE', err });
 		}
 	};
@@ -180,8 +178,7 @@ export const isAuthenticated = async (
 			if ((type == null || token == null) && type != 'Bearer') {
 				return next(new AuthenticationError('Invalid Auth Token 🧨'));
 			}
-			// @ts-ignore: Temporary workaround (see ticket #422)
-			const credentials = await VerifyJwtToken(
+			const credentials = await verifyJwtToken(
 				token as string,
 			);
 			if (credentials == null) {
@@ -193,13 +190,14 @@ export const isAuthenticated = async (
 					new AuthenticationError('Expired Credentials Token 🧨'),
 				);
 			}
-			// @ts-ignore: Temporary workaround (see ticket #422)
-			req.user = {
+
+			req.app.locals.user = {
 				id: credentials.id,
 				email: credentials.email,
 				username: credentials.username,
 				role: credentials.role,
 			};
+			
 			return next();
 		}
 	} catch (err) {
@@ -225,9 +223,9 @@ export const isAuthorized = (...roles: Role[]) => {
 		res: OpineResponse,
 		next: NextFunction,
 	) => {
-		// @ts-ignore: Temporary workaround (see ticket #422)
-		const userRole = req.user.role;
-		let isAllowed = roles.includes(userRole);
+		const user = req.app.locals.user as any;
+		
+		let isAllowed = roles.includes(user.role);
 		if (isAllowed) {
 			return next();
 		}
@@ -235,28 +233,12 @@ export const isAuthorized = (...roles: Role[]) => {
 	};
 };
 
-export const isOwner = (db:VaultRepository)=>{
-	return async (req: OpineRequest,
-	res: OpineResponse,
-	next: NextFunction,)=>{
-	// @ts-ignore
-	let {password} = req.headers.owner ? req.headers.owner : null ;
-	// @ts-ignore
-	let {id} = req.user;
-	let data = await db.findOne({userId:new ObjectId(id)});
-	if (data && await bcryptCompare(password,data.settings.password)){
-		return next()
-	}
-	return next(new UnAuthorizedVaultAccessError())
-}}
-
 export const checkForUserExistence = (db: UserRepository) =>
 	async (
 		req: OpineRequest,
 		res: OpineResponse,
 		next: NextFunction,
 	) => {
-		// @ts-ignore: Temporary workaround (see ticket #422)
 		const { username, email } = req.body;
 		const user = await db.getCollection().findOne({
 			$or: [
@@ -284,10 +266,9 @@ export const parseIDParams = async (
 	res: OpineResponse,
 	next: NextFunction,
 ) => {
-	// @ts-ignore: Temporary workaround (see ticket #422)
-	if (req.user) {
-		// @ts-ignore: Temporary workaround (see ticket #422)
-		req.params.id = req.user.id;
+	if (req.app.locals.user) {
+		let user = req.app.locals.user as any;
+		req.params.id = user? user.id:null;
 	}
 	next();
 };

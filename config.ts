@@ -8,7 +8,6 @@ import {
 
 config({ export: true });
 
-// deno-lint-ignore no-explicit-any
 let configurationInstance: any = null;
 
 export function getEnvironmentVariable(key: string) {

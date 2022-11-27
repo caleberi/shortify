@@ -94,14 +94,6 @@ class LoggerFactory {
 				handlers: [...Object.keys(loghandler)],
 			};
 		});
-
-		console.log({
-			//define handlers
-			handlers: _handlers,
-			//assign handlers to loggers
-			loggers: _loggers,
-		});
-		
 		await log.setup({
 			//define handlers
 			handlers: _handlers,

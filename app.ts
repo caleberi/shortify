@@ -10,10 +10,7 @@ app.use(urlencoded());
 app.use(opineCors());
 app.use((req, res, next) => {
 	requestLogger.info(
-		JSON.stringify(`[${req.method}] ${req.url} ${res.status}`),
-	);
-	applogger.info(
-		JSON.stringify(`[${req.method}] ${req.url} ${res.status}`),
+		JSON.stringify(`[${req.method}] ${req.url}`),
 	);
 	next();
 });

@@ -1,11 +1,36 @@
-import { Router } from '../deps.ts';
+import { base64Decode, Link, Router } from "../deps.ts";
+import { LinkRepository } from "../lib/mongo/repo/link.repository.ts";
+import { errorlogger } from "../container.ts";
 
-export default function () {
-	const router = Router();
+export default function (ldb: LinkRepository) {
+  const router = Router();
 
-	// GET home page.
-	router.get('/ping', (_req, res, _next) => {
-		res.send('Pinged');
-	});
-	return router;
+  router.get("/ping", (_req, res, _next) => {
+    res.send("Pinged");
+  });
+
+  router.get("/short/:link", async (req, res, next) => {
+    try {
+      let {link}  = req.params as any;
+	  
+      const url = await Promise.resolve(ldb.getCollection().findOne({
+        shortId: link}));
+
+      if (!url) {
+        return res.setStatus(400).json({
+          status: "FAILURE",
+          data: "Not matched url link found",
+        });
+      }
+
+      if (link) {
+        return res.redirect(url.longUrl as string);
+      }
+    } catch (err) {
+      errorlogger.error(err);
+      return res.setStatus(500).json({ status: "FAILURE", err });
+    }
+  });
+
+  return router;
 }
