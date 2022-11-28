@@ -77,4 +77,4 @@ export const appconfig = configuration({
   environment: getEnvironmentVariable("APP_ENV"),
 });
 
-export const redis = appconfig.redisEnabled ? await runRedis() : null;
+// export const redis = appconfig.redisEnabled ? await runRedis() : null;
