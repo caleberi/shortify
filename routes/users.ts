@@ -1,4 +1,4 @@
-import { applogger, bcryptEncrypt, ObjectId, Router, User } from "../deps.ts";
+import { applogger, passwordEncrypt, ObjectId, Router, User } from "../deps.ts";
 import {
   checkForUserExistence,
   isAuthorized,
@@ -171,7 +171,7 @@ export default function (db: UserRepository) {
 
           const doc = await db.updateOne(
             { _id: new ObjectId(id) },
-            { password: await bcryptEncrypt(password as string, 10) }
+            { password: await passwordEncrypt(password as string,  Deno.env.get('SECRET_KEY') as string) }
           );
           return res.setStatus(200).json({
             status: "SUCCESS",

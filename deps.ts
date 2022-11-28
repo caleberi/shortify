@@ -26,7 +26,7 @@ export type {
 export { User } from './lib/mongo/models/user.ts';
 export { Link } from './lib/mongo/models/link.ts';
 export { validate } from 'https://deno.land/x/deno_class_validator@v1.0.0/mod.ts';
-export { bcryptCompare, bcryptEncrypt } from './lib/utils/bcrypt.ts';
+export { passwordCompare, passwordEncrypt } from './lib/utils/bcrypt.ts';
 export {
 	create,
 	getNumericDate,

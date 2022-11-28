@@ -1,7 +1,6 @@
 import { applogger, requestLogger } from './container.ts';
 import { json, opine, urlencoded } from './deps.ts';
 import { opineCors } from 'https://deno.land/x/cors@v1.2.2/mod.ts';
-import { raw } from 'https://deno.land/x/opine@2.1.5/src/middleware/bodyParser/raw.ts';
 
 const app = opine();
 

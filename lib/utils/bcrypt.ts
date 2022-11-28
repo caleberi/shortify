@@ -1,17 +1,18 @@
-import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
+import { sha256 } from "https://denopkg.com/chiefbiiko/sha256@master/mod.ts";
 
-export const bcryptEncrypt = async (
-	payload: string,
-	salt: number,
+export const passwordEncrypt = async (
+  password: string,
+  secretData: string
 ): Promise<string> => {
-	const generatedSalt = await bcrypt.genSalt(salt);
-	const hash = await bcrypt.hash(payload, generatedSalt);
-	return hash;
+  let data = password + secretData;
+  return sha256(data as string, "utf8", "hex").toString();
 };
 
-export const bcryptCompare = async (
-	plaintext: string,
-	hash: string,
+export const passwordCompare = async (
+  plaintext: string,
+  secretData: string,
+  password: string
 ): Promise<boolean> => {
-	return await bcrypt.compare(plaintext, hash);
+  let data = plaintext + secretData;
+  return sha256(data as string, "utf8", "hex").toString() === password;
 };

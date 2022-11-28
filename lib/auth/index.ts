@@ -3,8 +3,8 @@ import {
 	applogger,
 	AuthenticationError,
 	AuthorizationError,
-	bcryptCompare,
-	bcryptEncrypt,
+	passwordCompare,
+	passwordEncrypt,
 	create,
 	ExistingUserError,
 	extractValidationErrorMessage,
@@ -74,7 +74,7 @@ export const login = (db: UserRepository) =>
 
 		const user: User | undefined = await db.findOne({ email });
 		requestLogger.debug(`Found User : ${JSON.stringify(user)}`);
-		if (user != null && await bcryptCompare(password,user.password as string)) {
+		if (user != null && await passwordCompare(password,Deno.env.get('SECRET_KEY') as string,user.password as string)) {
 			requestLogger.debug(`Found User : ${JSON.stringify(user)}`);
 			const token = await CreateJwtToken({
 				id: user._id?.toString() as string,
@@ -122,7 +122,8 @@ export const signup = (db: UserRepository) =>
 					error: extractValidationErrorMessage(errors),
 				});
 			}
-			newUser.password = await bcryptEncrypt(newUser.password as string, 10);
+			
+			newUser.password = await passwordEncrypt(newUser.password as string, Deno.env.get('SECRET_KEY') as string);
 			const id = await db.create(newUser);
 			if (isNull(id)) {
 				return res.setStatus(401).json({
