@@ -33,7 +33,30 @@ function errorHandler(
 
 function _init(app: Opine): void {
   new MongoClient()
-    .connect(appconfig.mongoServerUrl)
+    .connect({
+      db: Deno.env.get("DB_NAME") as string,
+      tls: true,
+      servers: [
+        {
+          host: "nodeclusterbased-shard-00-01.cpkfe.mongodb.net",
+          port: 27017,
+        },
+        {
+          host: 'nodeclusterbased-shard-00-02.cpkfe.mongodb.net',
+          port: 27017,
+        },
+        {
+          host: "nodeclusterbased-shard-00-00.cpkfe.mongodb.net",
+          port: 27017,
+        }
+      ],
+      credential: {
+        username: Deno.env.get("DB_USER") as string || 'AstraVilla',
+        password: Deno.env.get("DB_PASSWORD") as string,
+        db: Deno.env.get("DB_NAME") as string,
+        mechanism: "SCRAM-SHA-1",
+      },
+    })
     .then(async (database: Database) => {
       applogger.info(`Connected database to [${appconfig.mongoServerUrl}]`);
 
