@@ -73,7 +73,7 @@ export const login = (db: UserRepository) =>
 		const { email, password } = req.body;
 
 		const user: User | undefined = await db.findOne({ email });
-
+		requestLogger.debug(`Found User : ${JSON.stringify(user)}`);
 		if (user != null && await bcryptCompare(password,user.password as string)) {
 			requestLogger.debug(`Found User : ${JSON.stringify(user)}`);
 			const token = await CreateJwtToken({
