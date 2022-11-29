@@ -105,8 +105,8 @@ export default function (db: UserRepository) {
       parseIDParams,
       isAuthorized(Role.OWNER),
       async (req, res, next) => {
+        const { id } = req.params;
         try {
-          const { id } = req.params;
           const { username, email, avatarUrl } = req.body;
           const newUser = new User();
           newUser.email = email;
@@ -122,11 +122,9 @@ export default function (db: UserRepository) {
             data: doc,
           });
         } catch (err) {
-          console.log(err);
-          
           return res.setStatus(400).json({
             status: "FAILURE",
-            err: err,
+            err: `could not update user with ${id}`,
           });
         }
       }
@@ -136,8 +134,8 @@ export default function (db: UserRepository) {
       parseIDParams,
       isAuthorized(Role.OWNER),
       async (req, res, next) => {
+        const { id } = req.params;
         try {
-          const { id } = req.params;
           const count = await db.deleteOne({ _id: new ObjectId(id) });
           return res.setStatus(200).json({
             status: "SUCCESS",
@@ -146,7 +144,7 @@ export default function (db: UserRepository) {
         } catch (err) {
           return res.setStatus(400).json({
             status: "FAILURE",
-            err: err,
+            err: `could not delete user with ${id}`,
           });
         }
       }
@@ -180,7 +178,7 @@ export default function (db: UserRepository) {
         } catch (err) {
           return res.setStatus(400).json({
             status: "FAILURE",
-            err: err,
+            err: "Could not update password",
           });
         }
       }
