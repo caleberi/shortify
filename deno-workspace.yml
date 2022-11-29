@@ -3,7 +3,7 @@ scripts:
     file: mod.ts
     deno_options:
       allow-net: 
-        - example.com
+        - '*'
       allow-read:
         - node_modules/**
       # allow-write:
