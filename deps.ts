@@ -56,8 +56,8 @@ export {
 } from 'https://deno.land/x/deno_class_validator@v1.0.0/mod.ts';
 
 import {
-    decode as base64Decode,
-    encode as base64Encode,
+	decode as base64Decode,
+	encode as base64Encode,
 } from 'https://deno.land/std@0.82.0/encoding/base64.ts';
- 
+
 export { base64Decode, base64Encode };

@@ -1,8 +1,8 @@
 import { ObjectId } from '../../../deps.ts';
 import {
+	IsDate,
 	IsEmail,
 	IsNotEmpty,
-	IsDate
 } from 'https://deno.land/x/deno_class_validator@v1.0.0/mod.ts';
 
 export enum Role {
@@ -10,29 +10,29 @@ export enum Role {
 	ADMIN = 'ADMIN',
 }
 export class User {
-	public _id: ObjectId|undefined;
+	public _id: ObjectId | undefined;
 
 	@IsNotEmpty({ message: 'Username must be provided' })
-	public username: string|undefined;
+	public username: string | undefined;
 
 	@IsNotEmpty({ message: 'Password must be provided' })
-	public password: string|undefined;
+	public password: string | undefined;
 
-	public profileImageUrl: string|undefined;
+	public profileImageUrl: string | undefined;
 
 	@IsEmail({}, { message: 'Missing or incorrect email address' })
-	public email: string|undefined;
+	public email: string | undefined;
 
 	public role: Role = Role.OWNER;
 
 	@IsDate()
-	public updatedAt: Date|undefined;
+	public updatedAt: Date | undefined;
 
 	@IsDate()
-    public createdAt: Date|undefined;
+	public createdAt: Date | undefined;
 
-	constructor(){
+	constructor() {
 		this.createdAt = new Date();
-		this.updatedAt = new Date()
+		this.updatedAt = new Date();
 	}
 }

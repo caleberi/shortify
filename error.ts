@@ -61,4 +61,3 @@ export class NoExistingLinkError extends Error {
 		);
 	}
 }
-

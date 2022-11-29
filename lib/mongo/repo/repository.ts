@@ -13,7 +13,9 @@ import {
 	UpdateOptions,
 } from 'https://deno.land/x/mongo@v0.29.3/mod.ts';
 
-export default abstract class Repository<T extends { _id?: ObjectId|undefined; }> {
+export default abstract class Repository<
+	T extends { _id?: ObjectId | undefined },
+> {
 	protected readonly collection: Collection<T>;
 	private readonly db: Database;
 	constructor(database: Database, collectionName: string) {

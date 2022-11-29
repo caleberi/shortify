@@ -3,14 +3,14 @@ import {
 	applogger,
 	AuthenticationError,
 	AuthorizationError,
-	passwordCompare,
-	passwordEncrypt,
 	create,
 	ExistingUserError,
 	extractValidationErrorMessage,
 	getNumericDate,
 	isEmpty,
 	isNull,
+	passwordCompare,
+	passwordEncrypt,
 	User,
 	validate,
 	ValidationError,
@@ -25,7 +25,6 @@ import type {
 import { UserRepository } from '../mongo/repo/user.repository.ts';
 import { Role } from '../mongo/models/user.ts';
 import { requestLogger } from '../../container.ts';
-
 
 const key = await crypto.subtle.generateKey(
 	{ name: 'HMAC', hash: 'SHA-512' },
@@ -65,81 +64,91 @@ const verifyJwtToken = async (token: string): Promise<Payload> => {
 };
 
 export const login = (db: UserRepository) =>
-	async (
-		req: OpineRequest,
-		res: OpineResponse,
-		next: NextFunction,
-	) => {
-		const { email, password } = req.body;
+async (
+	req: OpineRequest,
+	res: OpineResponse,
+	next: NextFunction,
+) => {
+	const { email, password } = req.body;
 
-		const user: User | undefined = await db.findOne({ email });
+	const user: User | undefined = await db.findOne({ email });
+	requestLogger.debug(`Found User : ${JSON.stringify(user)}`);
+	if (
+		user != null &&
+		await passwordCompare(
+			password,
+			Deno.env.get('SECRET_KEY') as string,
+			user.password as string,
+		)
+	) {
 		requestLogger.debug(`Found User : ${JSON.stringify(user)}`);
-		if (user != null && await passwordCompare(password,Deno.env.get('SECRET_KEY') as string,user.password as string)) {
-			requestLogger.debug(`Found User : ${JSON.stringify(user)}`);
-			const token = await CreateJwtToken({
-				id: user._id?.toString() as string,
-				email: user.email as string,
-				username: user.username as string,
-				role: user.role,
-			}, 'HS512');
-			return res.setStatus(200).json({
-				status: 'SUCCESS',
-				token: token,
-			});
-		}
-		applogger.error(
-			`login request failed for email : ${email} at ${
-				new Date().toISOString()
-			}`,
-		);
-		return res.setStatus(404).json({
+		const token = await CreateJwtToken({
+			id: user._id?.toString() as string,
+			email: user.email as string,
+			username: user.username as string,
+			role: user.role,
+		}, 'HS512');
+		return res.setStatus(200).json({
 			status: 'SUCCESS',
-			message: 'User does not exist or invalid credential in details',
+			token: token,
 		});
-	};
+	}
+	applogger.error(
+		`login request failed for email : ${email} at ${
+			new Date().toISOString()
+		}`,
+	);
+	return res.setStatus(404).json({
+		status: 'SUCCESS',
+		message: 'User does not exist or invalid credential in details',
+	});
+};
 
 export const signup = (db: UserRepository) =>
-	async (
-		req: OpineRequest,
-		res: OpineResponse,
-		next: NextFunction,
-	) => {
-		const { username, password, email } = req.body;
-		const newUser = new User();
+async (
+	req: OpineRequest,
+	res: OpineResponse,
+	next: NextFunction,
+) => {
+	const { username, password, email } = req.body;
+	const newUser = new User();
 
-		newUser.email = email;
-		newUser.username = username;
-		newUser.password = password;
-		newUser.role = Role.OWNER;
+	newUser.email = email;
+	newUser.username = username;
+	newUser.password = password;
+	newUser.role = Role.OWNER;
 
-		try {
-			const errors = await validate(newUser, {
-				validationError: { target: false },
+	try {
+		const errors = await validate(newUser, {
+			validationError: { target: false },
+		});
+		if (errors.length > 0) {
+			return res.setStatus(400).json({
+				status: 'FAILURE',
+				error: extractValidationErrorMessage(errors),
 			});
-			if (errors.length > 0) {
-				return res.setStatus(400).json({
-					status: 'FAILURE',
-					error: extractValidationErrorMessage(errors),
-				});
-			}
-			
-			newUser.password = await passwordEncrypt(newUser.password as string, Deno.env.get('SECRET_KEY') as string);
-			const id = await db.create(newUser);
-			if (isNull(id)) {
-				return res.setStatus(401).json({
-					status: 'FAILURE',
-					message: 'Could not create user',
-				});
-			}
-			applogger.info(`Created a user with id : [${id}] 🐙`);
-			return res.setStatus(201).jsonp({
-				status: 'SUCCESS',
-				message: `Created a user with id : [${id}] 🐙`,
-			});
-		} catch (err) {
-			return res.setStatus(500).json({ status: 'FAILURE', err });
 		}
-	};
+
+		newUser.password = await passwordEncrypt(
+			newUser.password as string,
+			Deno.env.get('SECRET_KEY') as string,
+		);
+		const id = await db.create(newUser);
+		if (isNull(id)) {
+			return res.setStatus(401).json({
+				status: 'FAILURE',
+				message: 'Could not create user',
+			});
+		}
+		applogger.info(`Created a user with id : [${id}] 🐙`);
+		return res.setStatus(201).jsonp({
+			status: 'SUCCESS',
+			message: `Created a user with id : [${id}] 🐙`,
+		});
+	} catch (err) {
+		return res.setStatus(500).json({ status: 'FAILURE', err });
+	}
+};
 
 function isExpired(exp: number, leeway = 0): boolean {
 	return exp + leeway < Date.now() / 1000;
@@ -198,7 +207,7 @@ export const isAuthenticated = async (
 				username: credentials.username,
 				role: credentials.role,
 			};
-			
+
 			return next();
 		}
 	} catch (err) {
@@ -225,7 +234,7 @@ export const isAuthorized = (...roles: Role[]) => {
 		next: NextFunction,
 	) => {
 		const user = req.app.locals.user as any;
-		
+
 		let isAllowed = roles.includes(user.role);
 		if (isAllowed) {
 			return next();
@@ -235,32 +244,32 @@ export const isAuthorized = (...roles: Role[]) => {
 };
 
 export const checkForUserExistence = (db: UserRepository) =>
-	async (
-		req: OpineRequest,
-		res: OpineResponse,
-		next: NextFunction,
-	) => {
-		const { username, email } = req.body;
-		const user = await db.getCollection().findOne({
-			$or: [
-				{ username: username },
-				{ email: email },
-			],
-		});
+async (
+	req: OpineRequest,
+	res: OpineResponse,
+	next: NextFunction,
+) => {
+	const { username, email } = req.body;
+	const user = await db.getCollection().findOne({
+		$or: [
+			{ username: username },
+			{ email: email },
+		],
+	});
 
-		if (!isNull(user)) {
-			if (user?.email === email) {
-				return next(
-					new ExistingUserError(`A user with email ${email} exist`),
-				);
-			} else if (user?.username === username) {
-				return next(
-					new ExistingUserError(`A user with username ${user} exist`),
-				);
-			}
+	if (!isNull(user)) {
+		if (user?.email === email) {
+			return next(
+				new ExistingUserError(`A user with email ${email} exist`),
+			);
+		} else if (user?.username === username) {
+			return next(
+				new ExistingUserError(`A user with username ${user} exist`),
+			);
 		}
-		next();
-	};
+	}
+	next();
+};
 
 export const parseIDParams = async (
 	req: OpineRequest,
@@ -269,7 +278,7 @@ export const parseIDParams = async (
 ) => {
 	if (req.app.locals.user) {
 		let user = req.app.locals.user as any;
-		req.params.id = user? user.id:null;
+		req.params.id = user ? user.id : null;
 	}
 	next();
 };

@@ -72,11 +72,14 @@ class LoggerFactory {
 			if (opts?.file) {
 				loghandler = {
 					...loghandler,
-					[`${name}-file`]: new log.handlers.FileHandler(opts.file.level, {
-						filename: opts.file.filename,
-						formatter: opts.file.formatter,
-						mode: opts.file.mode,
-					}),
+					[`${name}-file`]: new log.handlers.FileHandler(
+						opts.file.level,
+						{
+							filename: opts.file.filename,
+							formatter: opts.file.formatter,
+							mode: opts.file.mode,
+						},
+					),
 				};
 			}
 
