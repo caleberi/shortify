@@ -27,8 +27,7 @@ export default function (ldb: LinkRepository) {
         return res.redirect(url.longUrl as string);
       }
     } catch (err) {
-      errorlogger.error(err);
-      return res.setStatus(500).json({ status: "FAILURE", err });
+      next(err);
     }
   });
 
