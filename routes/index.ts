@@ -5,8 +5,8 @@ import { errorlogger } from "../container.ts";
 export default function (ldb: LinkRepository) {
   const router = Router();
 
-  router.get("/ping", (_req, res, _next) => {
-    res.send("Pinged");
+  router.get("/", (_req, res, _next) => {
+    res.redirect('https://documenter.getpostman.com/view/4514816/2s8YswSXUU')
   });
 
   router.get("/short/:link", async (req, res, next) => {
