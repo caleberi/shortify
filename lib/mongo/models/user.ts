@@ -9,6 +9,7 @@ export enum Role {
 	OWNER = 'OWNER',
 	ADMIN = 'ADMIN',
 }
+
 export class User {
 	public _id: ObjectId | undefined;
 

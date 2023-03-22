@@ -1,2 +1,2 @@
-import { UserRepository } from './repo/user.repository.ts';
-import { LinkRepository } from './repo/link.repository.ts';
+export * from './repo/user.repository.ts';
+export * from './repo/link.repository.ts';

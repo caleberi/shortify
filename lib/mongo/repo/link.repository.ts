@@ -1,4 +1,4 @@
-import Repository from './repository.ts';
+import Repository from './base/repository.ts';
 import { Database } from 'https://deno.land/x/mongo@v0.29.3/mod.ts';
 import { Link } from '../models/link.ts';
 

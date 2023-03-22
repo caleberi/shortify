@@ -1,35 +1,11 @@
-import app from './app.ts';
+import {Database,MongoClient,NextFunction,Opine,OpineRequest,OpineResponse} from './deps.ts';
 import { appconfig, applogger, errorlogger } from './container.ts';
-import {
-	Database,
-	MongoClient,
-	NextFunction,
-	Opine,
-	OpineRequest,
-	OpineResponse,
-} from './deps.ts';
 import { UserRepository } from './lib/mongo/repo/user.repository.ts';
 import { LinkRepository } from './lib/mongo/repo/link.repository.ts';
 import indexRouter from './routes/index.ts';
 import usersRouter from './routes/users.ts';
 import linkRouter from './routes/links.ts';
-
-const port = appconfig.port ? appconfig.port : 3000;
-app.set('port', port);
-
-const env = appconfig.environment ? appconfig.environment : 'development';
-app.set('env', env);
-
-function errorHandler(
-	err: any,
-	_req: OpineRequest,
-	res: OpineResponse,
-	_next: NextFunction,
-) {
-	// respond with custom 500 "Internal Server Error".
-	res.setStatus(500);
-	res.json({ message: 'Internal Server Error', error: err.message });
-}
+import app from './app.ts';
 
 function _init(app: Opine): void {
 	new MongoClient()
@@ -58,27 +34,14 @@ function _init(app: Opine): void {
 			},
 		})
 		.then(async (database: Database) => {
-			applogger.info(
-				`Connected database to [${appconfig.mongoServerUrl}]`,
-			);
-
+			applogger.info(`Connected database to [${appconfig.mongoServerUrl}]`);
+			
 			const userDb = new UserRepository(database, 'users');
-
 			const linkDb = new LinkRepository(database, 'links');
 
 			await linkDb.createIndexes({
-				indexes: [
-					{
-						key: {
-							shortId: 1,
-						},
-						name: 'short_id_idx',
-						unique: true,
-					},
-				],
-				comment: {
-					userId: 'shortId for fast location of links',
-				},
+				indexes:[{key: {shortId: 1},name: 'short_id_idx',unique: true}],
+				comment: {userId: 'shortId for fast location of links'},
 			});
 
 			// Mount routers
@@ -89,11 +52,13 @@ function _init(app: Opine): void {
 			app.use(errorHandler);
 			// Start our Opine server on the provided or default port.
 			const server = app.listen(
-				port,
-				() => applogger.info(`Server ⛳ listening on port ${port}`),
+				app.get('port'),
+				() => applogger.info(`Server ⛳ listening on port ${app.get('port')}`)
 			);
 
-			Deno.addSignalListener('SIGINT', () => {
+			Deno.addSignalListener(
+				'SIGINT', 
+				() => {
 				applogger.info(
 					'🚩 Shutting server gracefully after 3000ms ...!',
 				);
@@ -101,11 +66,23 @@ function _init(app: Opine): void {
 				setTimeout(() => {}, 3000);
 				Deno.exit();
 			});
+
 		})
-		.catch((err) => {
+		.catch((err: any) => {
 			errorlogger.error(`Error:[${JSON.stringify(err)}]`);
 			throw err;
 		});
+}
+
+function errorHandler(
+	err: any,
+	_req: OpineRequest,
+	res: OpineResponse,
+	_next: NextFunction,
+) {
+	// respond with custom 500 "Internal Server Error".
+	res.setStatus(500);
+	res.json({ message: 'Internal Server Error', error: err.message });
 }
 
 if (import.meta.main) {

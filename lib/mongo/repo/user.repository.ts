@@ -1,5 +1,5 @@
 import { User } from '../models/user.ts';
-import Repository from './repository.ts';
+import Repository from './base/repository.ts';
 import { Database } from 'https://deno.land/x/mongo@v0.29.3/mod.ts';
 
 export class UserRepository extends Repository<User> {

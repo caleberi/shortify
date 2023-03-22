@@ -1,27 +1,9 @@
-import {
-	appconfig,
-	applogger,
-	AuthenticationError,
-	AuthorizationError,
-	create,
-	ExistingUserError,
-	extractValidationErrorMessage,
-	getNumericDate,
-	isEmpty,
-	isNull,
-	passwordCompare,
-	passwordEncrypt,
-	User,
-	validate,
-	ValidationError,
-	verify,
+import { 
+	appconfig,applogger, AuthenticationError, AuthorizationError,create,
+	ExistingUserError, extractValidationErrorMessage, getNumericDate,isEmpty,
+	isNull, passwordCompare, passwordEncrypt, User, validate,ValidationError,verify,
 } from '../../deps.ts';
-import type {
-	NextFunction,
-	OpineRequest,
-	OpineResponse,
-	Payload,
-} from '../../deps.ts';
+import type { NextFunction, OpineRequest, OpineResponse, Payload } from '../../deps.ts';
 import { UserRepository } from '../mongo/repo/user.repository.ts';
 import { Role } from '../mongo/models/user.ts';
 import { requestLogger } from '../../container.ts';
@@ -36,81 +18,49 @@ const CreateJwtToken = async (
 	payload: { id: string; email: string; role: Role; username: string },
 	algorithm: 'HS512',
 ): Promise<string> => {
-	try {
-		const expire = getNumericDate(60 * 60 * appconfig.jwtExpire);
-		applogger.info(
-			`encrypting data:[${payload.email}] into a JWT token at ${
-				new Date().toISOString()
-			}`,
-		);
-		return await create({ alg: algorithm, typ: 'JWT' }, {
-			...payload,
-			exp: expire,
-		}, key);
-	} catch (err) {
-		applogger.error(`error occured while creating token for [${payload}]`);
-		throw err;
-	}
+	const expire = getNumericDate(60 * 60 * appconfig.jwtExpire);
+	applogger.info(`encrypting data:[${payload.email}] into a JWT token at ${new Date().toISOString()}`);
+	const token = await create({ alg: algorithm, typ: 'JWT' }, {...payload,exp: expire,}, key);
+	return token;
 };
 
 const verifyJwtToken = async (token: string): Promise<Payload> => {
-	try {
-		const payload = await verify(token, key);
-		return payload;
-	} catch (err) {
-		applogger.error(`verification error occured for token [${token}]`);
-		throw err;
-	}
+	const payload = await verify(token, key);
+	return payload;
 };
 
-export const login = (db: UserRepository) =>
-async (
-	req: OpineRequest,
-	res: OpineResponse,
-	next: NextFunction,
-) => {
+export const login = (db: UserRepository) => async (req: OpineRequest, res: OpineResponse,next: NextFunction) => {
 	const { email, password } = req.body;
 
 	const user: User | undefined = await db.findOne({ email });
-	requestLogger.debug(`Found User : ${JSON.stringify(user)}`);
-	if (
-		user != null &&
-		await passwordCompare(
-			password,
-			Deno.env.get('SECRET_KEY') as string,
-			user.password as string,
-		)
-	) {
-		requestLogger.debug(`Found User : ${JSON.stringify(user)}`);
-		const token = await CreateJwtToken({
+	if ( user ) {
+		const passwordValid = await passwordCompare(password,Deno.env.get('SECRET_KEY') as string,user.password as string)
+		if (!passwordValid) {
+			return res.setStatus(404).json({
+				status: 'SUCCESS',
+				message: 'User does not exist or invalid credential in details',
+			});
+		}
+		const token = await CreateJwtToken({ 
 			id: user._id?.toString() as string,
-			email: user.email as string,
-			username: user.username as string,
-			role: user.role,
+			email: user.email as string, 
+			username: user.username as string, 
+			role: user.role
 		}, 'HS512');
 		return res.setStatus(200).json({
 			status: 'SUCCESS',
 			token: token,
 		});
 	}
-	applogger.error(
-		`login request failed for email : ${email} at ${
-			new Date().toISOString()
-		}`,
-	);
 	return res.setStatus(404).json({
 		status: 'SUCCESS',
 		message: 'User does not exist or invalid credential in details',
 	});
 };
 
-export const signup = (db: UserRepository) =>
-async (
-	req: OpineRequest,
-	res: OpineResponse,
-	next: NextFunction,
-) => {
+export const signup = (db: UserRepository) => async ( req: OpineRequest, res: OpineResponse,next: NextFunction) => {
 	const { username, password, email } = req.body;
+	
 	const newUser = new User();
 
 	newUser.email = email;
@@ -118,36 +68,33 @@ async (
 	newUser.password = password;
 	newUser.role = Role.OWNER;
 
-	try {
-		const errors = await validate(newUser, {
-			validationError: { target: false },
-		});
-		if (errors.length > 0) {
-			return res.setStatus(400).json({
-				status: 'FAILURE',
-				error: extractValidationErrorMessage(errors),
-			});
-		}
+	const errors = await validate(newUser, {
+		validationError: { target: false },
+	});
 
+	if (errors.length > 0) {
+		return res.setStatus(400).json({
+			status: 'FAILURE',
+			error: extractValidationErrorMessage(errors),
+		});
+	}
+
+	let id = null;
+	try {
 		newUser.password = await passwordEncrypt(
 			newUser.password as string,
 			Deno.env.get('SECRET_KEY') as string,
 		);
-		const id = await db.create(newUser);
-		if (isNull(id)) {
-			return res.setStatus(401).json({
-				status: 'FAILURE',
-				message: 'Could not create user',
-			});
-		}
-		applogger.info(`Created a user with id : [${id}] 🐙`);
-		return res.setStatus(201).jsonp({
-			status: 'SUCCESS',
-			message: `Created a user with id : [${id}] 🐙`,
-		});
+		id = await db.create(newUser);
 	} catch (err) {
 		return res.setStatus(500).json({ status: 'FAILURE', err });
 	}
+	
+	if (isNull(id))
+		return res.setStatus(401).json({status: 'FAILURE',message: 'Could not create user'});
+
+	applogger.info(`Created a user with id : [${id}] 🐙`);
+	return res.setStatus(201).jsonp({ status: 'SUCCESS',message: `Created a user with id : [${id}] 🐙`});
 };
 
 function isExpired(exp: number, leeway = 0): boolean {
@@ -173,57 +120,56 @@ export const isAuthenticated = async (
 	res: OpineResponse,
 	next: NextFunction,
 ) => {
-	try {
-		if (!req.headers.has('authorization')) {
-			return next(new AuthenticationError());
-		} else {
-			const authorization: string | null = req.headers.get(
-				'authorization',
-			);
+	if (!req.headers.has('authorization')) 
+		return next(new AuthenticationError());
+	
+	const authorization: string | null = req.headers.get(
+		'authorization',
+	);
 
-			const [type, token] = authorization != null
-				? authorization.split(' ')
-				: [null, null];
+	const [type, token] = authorization != null
+		? authorization.split(' ')
+		: [null, null];
 
-			if ((type == null || token == null) && type != 'Bearer') {
-				return next(new AuthenticationError('Invalid Auth Token 🧨'));
-			}
-			const credentials = await verifyJwtToken(
-				token as string,
-			);
-			if (credentials == null) {
-				return next(new AuthenticationError('Invalid Credentials 🧨'));
-			}
-			const hasExpired = isExpired(credentials.exp as number);
-			if (hasExpired) {
-				return next(
-					new AuthenticationError('Expired Credentials Token 🧨'),
-				);
-			}
+	if ((type == null || token == null) && type != 'Bearer') {
+		return next(new AuthenticationError('Invalid Auth Token 🧨'));
+	}
 
-			req.app.locals.user = {
-				id: credentials.id,
-				email: credentials.email,
-				username: credentials.username,
-				role: credentials.role,
-			};
-
-			return next();
+	try{
+		
+		const credentials = await verifyJwtToken(
+			token as string,
+		);
+		
+		if (credentials == null) {
+			return next(new AuthenticationError('Invalid Credentials 🧨'));
 		}
+
+		const hasExpired = isExpired(credentials.exp as number);
+		
+		if (hasExpired) {
+			return next(
+				new AuthenticationError('Expired Credentials Token 🧨'),
+			);
+		}
+
+		req.app.locals.user = {
+			id: credentials.id,
+			email: credentials.email,
+			username: credentials.username,
+			role: credentials.role,
+		};
+
+		return next();
+		
 	} catch (err) {
 		return next(err);
 	}
 };
 
-export const validatePassword = (
-	req: OpineRequest,
-	res: OpineResponse,
-	next: NextFunction,
-) => {
+export const validatePassword = ( req: OpineRequest, res: OpineResponse, next: NextFunction) => {
 	const { password, confirmPassword } = req.body;
-	if (password !== confirmPassword) {
-		return next(new ValidationError('password does not match'));
-	}
+	if (password !== confirmPassword) return next(new ValidationError('password does not match'));
 	next();
 };
 
