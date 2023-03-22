@@ -1,9 +1,27 @@
-import { 
-	appconfig,applogger, AuthenticationError, AuthorizationError,create,
-	ExistingUserError, extractValidationErrorMessage, getNumericDate,isEmpty,
-	isNull, passwordCompare, passwordEncrypt, User, validate,ValidationError,verify,
+import {
+	appconfig,
+	applogger,
+	AuthenticationError,
+	AuthorizationError,
+	create,
+	ExistingUserError,
+	extractValidationErrorMessage,
+	getNumericDate,
+	isEmpty,
+	isNull,
+	passwordCompare,
+	passwordEncrypt,
+	User,
+	validate,
+	ValidationError,
+	verify,
 } from '../../deps.ts';
-import type { NextFunction, OpineRequest, OpineResponse, Payload } from '../../deps.ts';
+import type {
+	NextFunction,
+	OpineRequest,
+	OpineResponse,
+	Payload,
+} from '../../deps.ts';
 import { UserRepository } from '../mongo/repo/user.repository.ts';
 import { Role } from '../mongo/models/user.ts';
 import { requestLogger } from '../../container.ts';
@@ -19,8 +37,15 @@ const CreateJwtToken = async (
 	algorithm: 'HS512',
 ): Promise<string> => {
 	const expire = getNumericDate(60 * 60 * appconfig.jwtExpire);
-	applogger.info(`encrypting data:[${payload.email}] into a JWT token at ${new Date().toISOString()}`);
-	const token = await create({ alg: algorithm, typ: 'JWT' }, {...payload,exp: expire,}, key);
+	applogger.info(
+		`encrypting data:[${payload.email}] into a JWT token at ${
+			new Date().toISOString()
+		}`,
+	);
+	const token = await create({ alg: algorithm, typ: 'JWT' }, {
+		...payload,
+		exp: expire,
+	}, key);
 	return token;
 };
 
@@ -29,73 +54,89 @@ const verifyJwtToken = async (token: string): Promise<Payload> => {
 	return payload;
 };
 
-export const login = (db: UserRepository) => async (req: OpineRequest, res: OpineResponse,next: NextFunction) => {
-	const { email, password } = req.body;
+export const login =
+	(db: UserRepository) =>
+	async (req: OpineRequest, res: OpineResponse, next: NextFunction) => {
+		const { email, password } = req.body;
 
-	const user: User | undefined = await db.findOne({ email });
-	if ( user ) {
-		const passwordValid = await passwordCompare(password,Deno.env.get('SECRET_KEY') as string,user.password as string)
-		if (!passwordValid) {
-			return res.setStatus(404).json({
+		const user: User | undefined = await db.findOne({ email });
+		if (user) {
+			const passwordValid = await passwordCompare(
+				password,
+				Deno.env.get('SECRET_KEY') as string,
+				user.password as string,
+			);
+			if (!passwordValid) {
+				return res.setStatus(404).json({
+					status: 'SUCCESS',
+					message:
+						'User does not exist or invalid credential in details',
+				});
+			}
+			const token = await CreateJwtToken({
+				id: user._id?.toString() as string,
+				email: user.email as string,
+				username: user.username as string,
+				role: user.role,
+			}, 'HS512');
+			return res.setStatus(200).json({
 				status: 'SUCCESS',
-				message: 'User does not exist or invalid credential in details',
+				token: token,
 			});
 		}
-		const token = await CreateJwtToken({ 
-			id: user._id?.toString() as string,
-			email: user.email as string, 
-			username: user.username as string, 
-			role: user.role
-		}, 'HS512');
-		return res.setStatus(200).json({
+		return res.setStatus(404).json({
 			status: 'SUCCESS',
-			token: token,
+			message: 'User does not exist or invalid credential in details',
 		});
-	}
-	return res.setStatus(404).json({
-		status: 'SUCCESS',
-		message: 'User does not exist or invalid credential in details',
-	});
-};
+	};
 
-export const signup = (db: UserRepository) => async ( req: OpineRequest, res: OpineResponse,next: NextFunction) => {
-	const { username, password, email } = req.body;
-	
-	const newUser = new User();
+export const signup =
+	(db: UserRepository) =>
+	async (req: OpineRequest, res: OpineResponse, next: NextFunction) => {
+		const { username, password, email } = req.body;
 
-	newUser.email = email;
-	newUser.username = username;
-	newUser.password = password;
-	newUser.role = Role.OWNER;
+		const newUser = new User();
 
-	const errors = await validate(newUser, {
-		validationError: { target: false },
-	});
+		newUser.email = email;
+		newUser.username = username;
+		newUser.password = password;
+		newUser.role = Role.OWNER;
 
-	if (errors.length > 0) {
-		return res.setStatus(400).json({
-			status: 'FAILURE',
-			error: extractValidationErrorMessage(errors),
+		const errors = await validate(newUser, {
+			validationError: { target: false },
 		});
-	}
 
-	let id = null;
-	try {
-		newUser.password = await passwordEncrypt(
-			newUser.password as string,
-			Deno.env.get('SECRET_KEY') as string,
-		);
-		id = await db.create(newUser);
-	} catch (err) {
-		return res.setStatus(500).json({ status: 'FAILURE', err });
-	}
-	
-	if (isNull(id))
-		return res.setStatus(401).json({status: 'FAILURE',message: 'Could not create user'});
+		if (errors.length > 0) {
+			return res.setStatus(400).json({
+				status: 'FAILURE',
+				error: extractValidationErrorMessage(errors),
+			});
+		}
 
-	applogger.info(`Created a user with id : [${id}] 🐙`);
-	return res.setStatus(201).jsonp({ status: 'SUCCESS',message: `Created a user with id : [${id}] 🐙`});
-};
+		let id = null;
+		try {
+			newUser.password = await passwordEncrypt(
+				newUser.password as string,
+				Deno.env.get('SECRET_KEY') as string,
+			);
+			id = await db.create(newUser);
+		} catch (err) {
+			return res.setStatus(500).json({ status: 'FAILURE', err });
+		}
+
+		if (isNull(id)) {
+			return res.setStatus(401).json({
+				status: 'FAILURE',
+				message: 'Could not create user',
+			});
+		}
+
+		applogger.info(`Created a user with id : [${id}] 🐙`);
+		return res.setStatus(201).jsonp({
+			status: 'SUCCESS',
+			message: `Created a user with id : [${id}] 🐙`,
+		});
+	};
 
 function isExpired(exp: number, leeway = 0): boolean {
 	return exp + leeway < Date.now() / 1000;
@@ -120,9 +161,10 @@ export const isAuthenticated = async (
 	res: OpineResponse,
 	next: NextFunction,
 ) => {
-	if (!req.headers.has('authorization')) 
+	if (!req.headers.has('authorization')) {
 		return next(new AuthenticationError());
-	
+	}
+
 	const authorization: string | null = req.headers.get(
 		'authorization',
 	);
@@ -135,18 +177,17 @@ export const isAuthenticated = async (
 		return next(new AuthenticationError('Invalid Auth Token 🧨'));
 	}
 
-	try{
-		
+	try {
 		const credentials = await verifyJwtToken(
 			token as string,
 		);
-		
+
 		if (credentials == null) {
 			return next(new AuthenticationError('Invalid Credentials 🧨'));
 		}
 
 		const hasExpired = isExpired(credentials.exp as number);
-		
+
 		if (hasExpired) {
 			return next(
 				new AuthenticationError('Expired Credentials Token 🧨'),
@@ -161,15 +202,20 @@ export const isAuthenticated = async (
 		};
 
 		return next();
-		
 	} catch (err) {
 		return next(err);
 	}
 };
 
-export const validatePassword = ( req: OpineRequest, res: OpineResponse, next: NextFunction) => {
+export const validatePassword = (
+	req: OpineRequest,
+	res: OpineResponse,
+	next: NextFunction,
+) => {
 	const { password, confirmPassword } = req.body;
-	if (password !== confirmPassword) return next(new ValidationError('password does not match'));
+	if (password !== confirmPassword) {
+		return next(new ValidationError('password does not match'));
+	}
 	next();
 };
 

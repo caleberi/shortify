@@ -1,4 +1,11 @@
-import {Database,MongoClient,NextFunction,Opine,OpineRequest,OpineResponse} from './deps.ts';
+import {
+	Database,
+	MongoClient,
+	NextFunction,
+	Opine,
+	OpineRequest,
+	OpineResponse,
+} from './deps.ts';
 import { appconfig, applogger, errorlogger } from './container.ts';
 import { UserRepository } from './lib/mongo/repo/user.repository.ts';
 import { LinkRepository } from './lib/mongo/repo/link.repository.ts';
@@ -34,14 +41,20 @@ function _init(app: Opine): void {
 			},
 		})
 		.then(async (database: Database) => {
-			applogger.info(`Connected database to [${appconfig.mongoServerUrl}]`);
-			
+			applogger.info(
+				`Connected database to [${appconfig.mongoServerUrl}]`,
+			);
+
 			const userDb = new UserRepository(database, 'users');
 			const linkDb = new LinkRepository(database, 'links');
 
 			await linkDb.createIndexes({
-				indexes:[{key: {shortId: 1},name: 'short_id_idx',unique: true}],
-				comment: {userId: 'shortId for fast location of links'},
+				indexes: [{
+					key: { shortId: 1 },
+					name: 'short_id_idx',
+					unique: true,
+				}],
+				comment: { userId: 'shortId for fast location of links' },
 			});
 
 			// Mount routers
@@ -53,20 +66,23 @@ function _init(app: Opine): void {
 			// Start our Opine server on the provided or default port.
 			const server = app.listen(
 				app.get('port'),
-				() => applogger.info(`Server ⛳ listening on port ${app.get('port')}`)
+				() =>
+					applogger.info(
+						`Server ⛳ listening on port ${app.get('port')}`,
+					),
 			);
 
 			Deno.addSignalListener(
-				'SIGINT', 
+				'SIGINT',
 				() => {
-				applogger.info(
-					'🚩 Shutting server gracefully after 3000ms ...!',
-				);
-				server.close();
-				setTimeout(() => {}, 3000);
-				Deno.exit();
-			});
-
+					applogger.info(
+						'🚩 Shutting server gracefully after 3000ms ...!',
+					);
+					server.close();
+					setTimeout(() => {}, 3000);
+					Deno.exit();
+				},
+			);
 		})
 		.catch((err: any) => {
 			errorlogger.error(`Error:[${JSON.stringify(err)}]`);

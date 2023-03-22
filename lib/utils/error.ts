@@ -1,5 +1,6 @@
 export class ConfigurationError extends Error {
-	private static default_configuration_message = 'missing configuration key❕';
+	private static default_configuration_message =
+		'missing configuration key❕';
 	constructor(msg: string, options?: ErrorOptions) {
 		super(
 			msg ? msg : ConfigurationError.default_configuration_message,
