@@ -89,10 +89,10 @@ export default function (udb: UserRepository, ldb: LinkRepository) {
 					message: 'Could not create user',
 				});
 			}
-			applogger.info(`Created a vault with id : [${slink}] 🐙`);
+			applogger.info(`Created a link with id : [${slink}] 🐙`);
 			return res.setStatus(201).jsonp({
 				status: 'SUCCESS',
-				message: `Created a vault with id : [${slink}] 🐙`,
+				message: `Created a link with id : [${slink}] 🐙`,
 			});
 		} catch (err) {
 			return res.setStatus(500).json({ status: 'FAILURE', err });
